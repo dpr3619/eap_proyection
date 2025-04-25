@@ -3,4 +3,8 @@ The main objective of this repository is to document the process and the code de
 
 ## ETL
 
-We use the GEIH (Gran encuesta integrada de hogares) data that contains all the information about the EAP in Colombia, the data has monthly data about the EAP population and information about employment in each one of the major economic sectors
+We use the GEIH (Gran encuesta integrada de hogares) data that contains all the information about the EAP in Colombia, the data has monthly data about the EAP population and information about employment in each one of the major economic sectors.
+
+## Models
+
+This is a work in progress

@@ -1,0 +1,35 @@
+# Evitar archivos de datos
+*.csv
+*.xls
+*.xlsx
+
+# Archivos temporales de Jupyter
+.ipynb_checkpoints/
+
+# Entornos virtuales
+venv/
+.env
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Configuración de IDEs
+.vscode/
+.idea/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Salidas temporales o generadas
+*.log
+*.tmp
+*.bak
+
+# Archivos de cache
+*.egg-info/
+.eggs/
+*.cache/
