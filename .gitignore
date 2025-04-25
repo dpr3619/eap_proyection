@@ -2,6 +2,7 @@
 *.csv
 *.xls
 *.xlsx
+*Zone.Identifier
 
 # Archivos temporales de Jupyter
 .ipynb_checkpoints/
