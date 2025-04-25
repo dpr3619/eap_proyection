@@ -96,3 +96,18 @@ def process_dataframe_with_year_month(df: pd.DataFrame) -> pd.DataFrame:
 
 #### CLEANING OF SECTOR DATA #####
 
+def read_geih_sector_data(path: str) -> pd.DataFrame:
+    """
+    Reads the GEIH raw data from the specified path and return an unprocessed DataFrame.
+    Args:
+        path (str): Path to the GEIH data file.
+    Returns:
+        pd.DataFrame: Unprocessed DataFrame containing the GEIH data.
+    """
+    # Read the data
+    df = pd.read_excel('data/anex-GEIH-feb2025.xlsx', 
+                sheet_name = 'Ocupados TN_T13_rama',
+                header = 12)
+    # Filtering by neccesary columns
+    df = df.iloc[0:18].copy()
+    return df
