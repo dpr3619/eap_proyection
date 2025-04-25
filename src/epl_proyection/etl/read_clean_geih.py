@@ -12,6 +12,7 @@ import os
 # CONSTANTS
 MONTHSDICT = {'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
                 'Jul': '07', 'Ago': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12'}
+IDCOLS = ['Year', 'Month','MonthNumber', 'YearMonth']
 
 ##### CLEANING OF GLOBAL EAP DATA #####
 
@@ -94,6 +95,21 @@ def process_dataframe_with_year_month(df: pd.DataFrame) -> pd.DataFrame:
     df['YearMonth'] = pd.to_datetime(df['Year'].astype(str) + '-' + df['MonthNumber'].astype(str), format='%Y-%m')
     return df
 
+def columns_to_numeric(df:pd.DataFrame, columns: list) -> pd.DataFrame:
+    """
+    Converts specified columns in a DataFrame to numeric data types.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame.
+        columns (list): A list of column names to be converted to numeric.
+
+    Returns:
+        pd.DataFrame: The modified DataFrame with specified columns converted to numeric.
+    """
+    for col in columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    return df
+
 #### CLEANING OF SECTOR DATA #####
 
 def read_geih_sector_data(path: str) -> pd.DataFrame:
@@ -111,3 +127,40 @@ def read_geih_sector_data(path: str) -> pd.DataFrame:
     # Filtering by neccesary columns
     df = df.iloc[0:18].copy()
     return df
+
+
+
+## MAIN PIPELINE ##
+
+def run_pipeline():
+    """
+    Main function to run the data processing pipeline.
+    """
+    # Read the data
+    df = read_geih_global_data('data/anex-GEIH-feb2025.xlsx')
+    df_sector = read_geih_sector_data('data/anex-GEIH-feb2025.xlsx')
+
+    # Transform the data
+    df = transform_dataframe_v2(df)
+    df_sector = transform_dataframe_v2(df_sector)
+
+    # Process the data
+    df = process_dataframe_with_year_month(df)
+    df_sector = process_dataframe_with_year_month(df_sector)
+
+    # Convert columns to numeric
+    cols_to_correct_total = [x for x in df.columns if x not in IDCOLS]
+    cols_to_correct_sector = [x for x in df_sector.columns if x not in IDCOLS]
+
+    df = columns_to_numeric(df, cols_to_correct_total)
+    df_sector = columns_to_numeric(df_sector, cols_to_correct_sector)
+    df_sector.drop(columns = ['Year','Month','MonthNumber'], inplace = True)
+
+    # Join the dataframes
+    df_joined = pd.merge(df,
+                    df_sector,
+                    how = 'left',
+                    on = 'YearMonth',
+                    suffixes= ('_total','_sector'))
+
+    return df_joined
