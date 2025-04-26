@@ -60,6 +60,7 @@ def transform_dataframe_v2(df: pd.DataFrame) -> pd.DataFrame:
     new_df.columns = new_columns
     new_df = new_df.iloc[1:].copy()
     new_df.reset_index(inplace=True, names='Year')
+    new_df = new_df.rename_axis(None, axis=1)
     new_df['Year'] = pd.to_numeric(new_df['Year'], errors='coerce')
     new_df['Year'] = new_df['Year'].ffill()
     new_df['Year'] = new_df['Year'].astype(int)
