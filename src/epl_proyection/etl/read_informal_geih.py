@@ -12,7 +12,7 @@ import os
 MONTHSDICT = {'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
                 'Jul': '07', 'Ago': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12'}
 IDCOLS = ['Year', 'Month','MonthNumber', 'YearMonth']
-
+IDCOLSSECTOR = ['Year','Quarter']
 ## Read informal GEIH data from 2021 and above ##
 
 def read_geih_informal_data(path: str, sheet_name:str) -> pd.DataFrame:
@@ -199,3 +199,47 @@ def rename_and_filter_columns(df:pd.DataFrame, sector:list) -> pd.DataFrame:
 
 
     return df
+
+def run_pipeline(path: str, sheet_name:str) -> pd.DataFrame:
+    """
+    Main function to run the data processing pipeline.
+
+    Args:
+        path (str): Path to the GEIH data file.
+        sheet_name (str): Name of the sheet in the Excel file.
+        sector (list): List of sectors to filter.
+
+    Returns:
+        pd.DataFrame: The final processed DataFrame.
+    """
+    # Informal and Formal labor data
+    df = read_geih_informal_data(path, sheet_name)
+    df = transform_dataframe_v2(df)
+    df = process_dataframe_with_year_month(df)
+    df = columns_to_numeric(df, ['Población ocupada','Formal','Informal'])
+    
+    return df
+
+def run_pipeline_sector(path: str, sheet_name:str, sector:list) -> pd.DataFrame:
+    """
+    Main function to run the data processing pipeline for sector data.
+
+    Args:
+        path (str): Path to the GEIH data file.
+        sheet_name (str): Name of the sheet in the Excel file.
+        sector (list): List of sectors to filter.
+
+    Returns:
+        pd.DataFrame: The final processed DataFrame.
+    """
+    # Informal and Formal labor data
+    df = read_geih_informal_data_sector(path, sheet_name)
+    df = transform_dataframe_v2_sector(df)
+    df = rename_and_filter_columns(df, sector)
+    cols_to_change = [x for x in df.columns if x not in IDCOLSSECTOR]
+    df = columns_to_numeric(df, columns = cols_to_change)
+    df['Year'] = df['Year'].astype(int)
+    df = columns_to_numeric(df, ['Población ocupada','Formal','Informal'])
+    
+    return df
+

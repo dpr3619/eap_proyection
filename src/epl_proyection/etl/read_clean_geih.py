@@ -14,6 +14,7 @@ from src.epl_proyection.utils.calendar_features import generate_monthly_calendar
 MONTHSDICT = {'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
                 'Jul': '07', 'Ago': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12'}
 IDCOLS = ['Year', 'Month','MonthNumber', 'YearMonth']
+TARGETVARIABLES = ['Población en edad de trabajar (PET)','Población ocupada']
 
 ##### CLEANING OF GLOBAL EAP DATA #####
 
@@ -149,7 +150,8 @@ def get_min_max_year(df: pd.DataFrame) -> tuple:
 
 ## MAIN PIPELINE ##
 
-def run_pipeline(target_year:int = 2040) -> pd.DataFrame:
+def run_pipeline(target_year:int = 2040, sectors:list = []) -> pd.DataFrame:
+    
     """
     Main function to run the data processing pipeline.
     """
@@ -194,5 +196,9 @@ def run_pipeline(target_year:int = 2040) -> pd.DataFrame:
                         df_joined,
                         how = 'left',
                         on = 'YearMonth')
-
-    return df_final
+    
+    ## Filterring by selected sectors
+    if not sectors:
+        return df_final
+    else:
+        return df_final[['YearMonth', 'Year', 'Month', 'workdays', 'weekends', 'holidays'] +TARGETVARIABLES+ sectors]
