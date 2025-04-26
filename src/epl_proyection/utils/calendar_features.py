@@ -12,8 +12,9 @@ def generate_monthly_calendar(start_year=2025, end_year=2040):
     dates = pd.date_range(start=f"{start_year}-01-01", end=f"{end_year}-12-31", freq="D")
 
     df = pd.DataFrame({"date": dates})
-    df["year"] = df["date"].dt.year
-    df["month"] = df["date"].dt.month
+    df["Year"] = df["date"].dt.year
+    df["Month"] = df["date"].dt.month
+    df["YearMonth"] = pd.to_datetime(df["Year"].astype(str) + "-" + df["Month"].astype(str), format='%Y-%m')
     df["weekday"] = df["date"].dt.weekday  # 0=Lunes, 6=Domingo
     df["is_weekend"] = df["weekday"] >= 5
     df["is_holiday"] = df["date"].apply(cal.is_holiday)
@@ -32,8 +33,8 @@ def generate_monthly_calendar(start_year=2025, end_year=2040):
         "is_holiday": "holidays"
     }, inplace=True)
 
-    monthly["year"] = monthly["period"].dt.year
-    monthly["month"] = monthly["period"].dt.month
-    monthly["period"] = monthly["period"].dt.to_timestamp()
+    monthly["Year"] = monthly["period"].dt.year
+    monthly["Month"] = monthly["period"].dt.month
+    monthly["YearMonth"] = monthly["period"].dt.to_timestamp()
 
-    return monthly[["period", "year", "month", "workdays", "weekends", "holidays"]]
+    return monthly[["YearMonth", "Year", "Month", "workdays", "weekends", "holidays"]]

@@ -8,6 +8,7 @@ Date: 24/04/2025
 import pandas as pd
 import numpy as np
 import os
+from src.epl_proyection.utils.calendar_features import generate_monthly_calendar
 
 # CONSTANTS
 MONTHSDICT = {'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
@@ -128,11 +129,26 @@ def read_geih_sector_data(path: str) -> pd.DataFrame:
     df = df.iloc[0:18].copy()
     return df
 
+## HELPER FUNCTIONS ##
+
+def get_min_max_year(df: pd.DataFrame) -> tuple:
+    """
+    Returns the minimum and maximum year from the 'Year' column of the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame.
+
+    Returns:
+        tuple: A tuple containing the minimum and maximum year.
+    """
+    min_year = df['Year'].min()
+    max_year = df['Year'].max()
+    return min_year, max_year
 
 
 ## MAIN PIPELINE ##
 
-def run_pipeline():
+def run_pipeline(target_year:int = 2040) -> pd.DataFrame:
     """
     Main function to run the data processing pipeline.
     """
@@ -144,9 +160,16 @@ def run_pipeline():
     df = transform_dataframe_v2(df)
     df_sector = transform_dataframe_v2(df_sector)
 
+
+
     # Process the data
     df = process_dataframe_with_year_month(df)
     df_sector = process_dataframe_with_year_month(df_sector)
+
+    #  Define the start date of the calendar
+    start_date, _ = get_min_max_year(df)
+    # Generate the monthly calendar
+    df_calendar = generate_monthly_calendar(start_year=start_date, end_year=target_year)
 
     # Convert columns to numeric
     cols_to_correct_total = [x for x in df.columns if x not in IDCOLS]
@@ -162,5 +185,13 @@ def run_pipeline():
                     how = 'left',
                     on = 'YearMonth',
                     suffixes= ('_total','_sector'))
+    df_joined.drop(columns = ['Year','Month','MonthNumber'], inplace = True)
 
-    return df_joined
+    # Join labor data and calendar data
+
+    df_final = pd.merge(df_calendar,
+                        df_joined,
+                        how = 'left',
+                        on = 'YearMonth')
+
+    return df_final
