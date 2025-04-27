@@ -242,4 +242,3 @@ def run_pipeline_sector(path: str, sheet_name:str, sector:list) -> pd.DataFrame:
     df = columns_to_numeric(df, ['Población ocupada','Formal','Informal'])
     
     return df
-

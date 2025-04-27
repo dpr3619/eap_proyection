@@ -9,6 +9,12 @@ Also when we check the data about the forman and informal employment in the econ
 
 ## Preporseccing
 
+Adding the supply shocks: Desde 2002 en Colombia se han presentado 3 choques de oferta de importante magnitud.
+El primero está vinculado al incremento de los precios del petróleo entre enero de 2007 y
+julio de 2008, justo antes de la crisis financiera de 2008. El segundo, asociado al fenómeno
+de El Niño que se presentó entre 2014 y 2015, y que se agudizó con el paro camionero
+que atravesó el país a mediados de 2016.
+
 ## Models
 
 * ARIMAX

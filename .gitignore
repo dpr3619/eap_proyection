@@ -3,6 +3,9 @@
 *.xls
 *.xlsx
 *Zone.Identifier
+*.json
+*.tsv
+*.tfevents
 
 # Archivos temporales de Jupyter
 .ipynb_checkpoints/
