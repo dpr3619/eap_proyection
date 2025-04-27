@@ -3,6 +3,16 @@ from src.epl_proyection.models.catboost.catboost_feature_engineering import make
 from src.epl_proyection.models.catboost.catboost_optuna_tuning import catboost_optuna_tuning
 from src.epl_proyection.models.catboost.catboost_train_catboost import train_catboost_with_params
 
+TRAINDATES =  {
+    'log_población en edad de trabajar (pet)': {'train_end': "2023-12-01"}, # entrenar hasta 1 año antes para dejar 12 meses de validación}
+    'log_población ocupada': {'train_end': "2023-12-01"},
+    'log_agricultura, ganadería, caza, silvicultura y pesca': {'train_end': "2023-02-01"},
+    'log_industrias manufactureras': {'train_end': "2023-02-01"},
+    'log_formales': {'train_end': "2024-09-01"},
+    'log_informales': {'train_end': "2024-09-01"}
+    }
+
+
 def run_catboost_pipeline(df_labor, n_trials = 30):
     """
     Entrena CatBoost para múltiples variables y genera un DataFrame final de resultados.
@@ -30,9 +40,7 @@ def run_catboost_pipeline(df_labor, n_trials = 30):
         if var == 'logdiff_población ocupada':
             dfsinNa = make_features(dfsinNa, target_column=var, exog_columns=['workdays', 'weekends', 'holidays','negative_crashes'], lags=[1,2,3], rolling_windows=[1,2,3])
             df =  make_features(df, target_column=var, exog_columns=['workdays', 'weekends', 'holidays','negative_crashes'], lags=[1,2,3], rolling_windows=[1,2,3])
-            df_train_a = dfsinNa[(dfsinNa['ds'] >= "2001-01-01") & (dfsinNa['ds'] <= "2014-12-01")]
-            df_train_b = dfsinNa[(dfsinNa['ds'] >= "2016-01-01") & (dfsinNa['ds'] <= "2023-12-01")]
-            df_train = pd.concat([df_train_a, df_train_b], ignore_index=True)
+            df_train = dfsinNa[dfsinNa['ds'] <= TRAINDATES[var]['train_end']]
             df_val = dfsinNa[~dfsinNa['ds'].isin(df_train['ds'])].copy()
             feature_columns = ['workdays', 'weekends', 'holidays','negative_crashes','lag_1','lag_2','lag_3',
                                             'rolling_mean_1','rolling_mean_2','rolling_mean_3','month']
@@ -41,9 +49,7 @@ def run_catboost_pipeline(df_labor, n_trials = 30):
                     'logdiff_industrias manufactureras']:
             dfsinNa = make_features(dfsinNa, target_column=var, exog_columns=['workdays', 'weekends', 'holidays','negative_crashes'], lags=[1,2,3], rolling_windows=[1,2,3])
             df = make_features(df, target_column=var, exog_columns=['workdays', 'weekends', 'holidays','negative_crashes'], lags=[1,2,3], rolling_windows=[1,2,3])
-            min_date = dfsinNa['ds'].min()
-            max_date = dfsinNa['ds'].max() - pd.DateOffset(months=12)
-            df_train = dfsinNa[(dfsinNa['ds'] >= min_date) & (dfsinNa['ds'] <= max_date)]
+            df_train = dfsinNa[(dfsinNa['ds'] <= TRAINDATES[var]['train_end'])]
             df_val = dfsinNa[~dfsinNa['ds'].isin(df_train['ds'])].copy()
             feature_columns = ['workdays', 'weekends', 'holidays','negative_crashes','lag_1','lag_2','lag_3',
                                             'rolling_mean_1','rolling_mean_2','rolling_mean_3','month']
@@ -51,9 +57,7 @@ def run_catboost_pipeline(df_labor, n_trials = 30):
         else:
             dfsinNa = make_features(dfsinNa, target_column=var, exog_columns=['workdays', 'weekends', 'holidays','negative_crashes'], lags=[1], rolling_windows=[1])
             df = make_features(df, target_column=var, exog_columns=['workdays', 'weekends', 'holidays','negative_crashes'], lags=[1], rolling_windows=[1])
-            min_date = dfsinNa['ds'].min()
-            max_date = dfsinNa['ds'].max() - pd.DateOffset(months=5)
-            df_train = dfsinNa[(dfsinNa['ds'] >= min_date) & (dfsinNa['ds'] <= max_date)]
+            df_train = dfsinNa[dfsinNa['ds'] <= TRAINDATES[var]['train_end']]
             df_val = dfsinNa[~dfsinNa['ds'].isin(df_train['ds'])].copy()
             feature_columns = ['workdays', 'weekends', 'holidays','negative_crashes','lag_1','rolling_mean_1','month']
 
