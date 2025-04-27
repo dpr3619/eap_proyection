@@ -3,6 +3,7 @@ import itertools
 import pandas as pd
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
+from src.epl_proyection.models.arimax.arimax_train_validate_forecast import train_forecast_arimax
 
 warnings.filterwarnings("ignore")
 
@@ -103,3 +104,74 @@ def arimax_grid_search_cv(
         'best_mae': best_mae,
         'model': best_model
     }
+
+
+from sklearn.metrics import mean_squared_error
+from math import sqrt
+import numpy as np
+
+def grid_search_arimax(
+    df,
+    target_column,
+    exog_columns,
+    train_end,
+    val_start,
+    val_end,
+    p_range=(0,5),
+    q_range=(0,5),
+    seasonal_order=(0,1,1,12)
+):
+    """
+    Realiza grid search de ARIMAX para encontrar mejor (p,d,q) basado en RMSE validación.
+
+    Args:
+        df (pd.DataFrame): DataFrame completo.
+        target_column (str): Target variable.
+        exog_columns (list): Variables exógenas.
+        train_end (str): Fecha fin de entrenamiento.
+        val_start (str): Inicio validación.
+        val_end (str): Fin validación.
+        p_range (tuple): Rango de p.
+        q_range (tuple): Rango de q.
+        seasonal_order (tuple): Orden estacional (P,D,Q,s).
+
+    Returns:
+        tuple: Mejor orden (p,1,q) encontrado.
+    """
+
+    best_rmse = np.inf
+    best_order = None
+
+    for p in range(p_range[0], p_range[1] + 1):
+        for q in range(q_range[0], q_range[1] + 1):
+            try:
+                # 1. Entrenar y predecir
+                result = train_forecast_arimax(
+                    df_labor=df,
+                    target_column=target_column,
+                    exog_columns=exog_columns,
+                    train_end=train_end,
+                    order=(p,1,q),
+                    seasonal_order=seasonal_order
+                )
+
+                forecast = result['forecast']
+
+                # 2. Validar solo en fechas de validación
+                df_val = df[(df['ds'] >= val_start) & (df['ds'] <= val_end)]
+                df_pred_val = forecast[(forecast['ds'] >= val_start) & (forecast['ds'] <= val_end)]
+
+                y_true_val = df_val[target_column].values
+                y_pred_val = df_pred_val['forecast'].values
+
+                rmse = sqrt(mean_squared_error(y_true_val, y_pred_val))
+
+                if rmse < best_rmse:
+                    best_rmse = rmse
+                    best_order = (p,1,q)
+
+            except Exception as e:
+                print(f"Falló para orden ({p},1,{q}): {e}")
+                continue
+
+    return best_order

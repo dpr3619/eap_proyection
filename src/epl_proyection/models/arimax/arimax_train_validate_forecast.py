@@ -1,6 +1,7 @@
 import pandas as pd
 from statsmodels.tsa.statespace.sarimax import SARIMAX
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
 
 def train_validate_forecast_arimax_full(
     df,
@@ -100,53 +101,44 @@ def train_validate_forecast_arimax_full(
     }
 
 
-def train_full_forecast_arimax(
-    df,
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+
+def train_forecast_arimax(
+    df_labor,
     target_column,
     exog_columns,
-    forecast_start="2025-03-01",
-    forecast_end="2040-12-01",
-    order=(1,1,1),
-    seasonal_order=(0,1,1,12),
-    verbose=True
+    train_end,
+    order,
+    seasonal_order
 ):
     """
-    ENTRENAMIENTO COMPLETO hasta forecast_start - 1 mes
-    Predice futuro desde forecast_start hasta forecast_end.
+    Entrena ARIMAX simple y predice el futuro.
 
     Args:
-        df (pd.DataFrame): DataFrame con 'ds', target, y regresores.
-        target_column (str): Variable objetivo.
-        exog_columns (list): Regresores.
-        forecast_start (str): Fecha de inicio de forecast futuro.
-        forecast_end (str): Fecha final de forecast futuro.
-        order (tuple): (p,d,q) para ARIMAX.
-        seasonal_order (tuple): Estacionalidad.
-        verbose (bool): Mostrar info.
+        df_labor (pd.DataFrame): DataFrame completo.
+        target_column (str): Variable target (ya en log si es necesario).
+        exog_columns (list): Variables exógenas.
+        train_end (str): Fecha fin de entrenamiento.
+        order (tuple): (p,d,q).
+        seasonal_order (tuple): (P,D,Q,s).
 
     Returns:
         dict: {
             'model': modelo entrenado,
-            'forecast_future': DataFrame con 'ds' y 'forecast'
+            'forecast': DataFrame de predicciones
         }
     """
 
-    df = df.copy()
-    df = df.rename(columns={target_column: 'y'})
+    # Split train/future
+    df_train = df_labor[df_labor['ds'] <= train_end].copy()
+    df_future = df_labor[df_labor['ds'] > train_end].copy()
 
-    # 1. Entrenar usando todo hasta un mes antes del forecast
-    cutoff_date = pd.to_datetime(forecast_start) - pd.DateOffset(months=1)
-    train = df[df['ds'] <= cutoff_date]
+    X_train = df_train[exog_columns] if exog_columns else None
+    y_train = df_train[target_column]
 
-    y_train = train['y']
-    X_train = train[exog_columns]
+    X_future = df_future[exog_columns] if exog_columns else None
 
-    # 2. Datos futuros
-    future = df[(df['ds'] >= forecast_start) & (df['ds'] <= forecast_end)]
-    future_exog = future[exog_columns]
-    future_dates = future['ds']
-
-    # 3. Entrenar modelo
+    # Entrenar modelo
     model = SARIMAX(
         endog=y_train,
         exog=X_train,
@@ -154,25 +146,19 @@ def train_full_forecast_arimax(
         seasonal_order=seasonal_order,
         enforce_stationarity=False,
         enforce_invertibility=False
-    )
+    ).fit(disp=False)
 
-    model_fit = model.fit(disp=False)
+    # Forecast futuro
+    steps = len(df_future)
+    forecast_result = model.get_forecast(steps=steps, exog=X_future)
+    forecast_mean = forecast_result.predicted_mean
 
-    # 4. Forecast futuro
-    steps_future = len(future_exog)
-    forecast_future = model_fit.forecast(steps=steps_future, exog=future_exog)
-
-    forecast_future_df = pd.DataFrame({
-        "ds": future_dates.values,
-        "forecast": forecast_future.values
-    })
-
-    if verbose:
-        print(f"✅ Modelo entrenado hasta {cutoff_date.strftime('%Y-%m')} y proyectando desde {forecast_start} hasta {forecast_end}")
+    forecast_df = df_future[['ds']].copy()
+    forecast_df['forecast'] = forecast_mean.values
 
     return {
-        'model': model_fit,
-        'forecast_future': forecast_future_df
+        'model': model,
+        'forecast': forecast_df
     }
 
 
