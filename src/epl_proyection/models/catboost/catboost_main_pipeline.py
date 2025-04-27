@@ -25,6 +25,7 @@ def run_catboost_pipeline(df_labor, n_trials = 30):
     """
 
     vars_to_predict = [
+        'log_población en edad de trabajar (pet)',
         'logdiff_población ocupada',
         'logdiff_agricultura, ganadería, caza, silvicultura y pesca',
         'logdiff_industrias manufactureras',
@@ -37,7 +38,7 @@ def run_catboost_pipeline(df_labor, n_trials = 30):
         df = df_labor.copy()
         dfsinNa = df.dropna(subset=[var])
 
-        if var == 'logdiff_población ocupada':
+        if var in ['logdiff_población ocupada', 'log_población en edad de trabajar (pet)']:
             dfsinNa = make_features(dfsinNa, target_column=var, exog_columns=['workdays', 'weekends', 'holidays','negative_crashes'], lags=[1,2,3], rolling_windows=[1,2,3])
             df =  make_features(df, target_column=var, exog_columns=['workdays', 'weekends', 'holidays','negative_crashes'], lags=[1,2,3], rolling_windows=[1,2,3])
             df_train = dfsinNa[dfsinNa['ds'] <= TRAINDATES[var]['train_end']]
@@ -85,7 +86,7 @@ def run_catboost_pipeline(df_labor, n_trials = 30):
         df_to_future = df_to_future[df_to_future['ds'] >= "2025-03-01"]
         df_to_future = pd.concat([df_to_know_data, df_to_future], ignore_index=True)
 
-        if var in ['logdiff_población ocupada', 'logdiff_agricultura, ganadería, caza, silvicultura y pesca', 'logdiff_industrias manufactureras']:
+        if var in ['logdiff_población ocupada', 'log_población en edad de trabajar (pet)', 'logdiff_agricultura, ganadería, caza, silvicultura y pesca', 'logdiff_industrias manufactureras']:
             df_to_future = make_features(df_to_future, target_column=var, exog_columns=['workdays', 'weekends', 'holidays','negative_crashes'], lags=[1,2,3], rolling_windows=[1,2,3])
         else:
             df_to_future = make_features(df_to_future, target_column=var, exog_columns=['workdays', 'weekends', 'holidays','negative_crashes'], lags=[1], rolling_windows=[1])
@@ -98,7 +99,7 @@ def run_catboost_pipeline(df_labor, n_trials = 30):
 
             df_to_future.at[index, f'pred_{var}'] = predicted_value
 
-            if var in ['logdiff_población ocupada', 'logdiff_agricultura, ganadería, caza, silvicultura y pesca', 'logdiff_industrias manufactureras']:
+            if var in ['logdiff_población ocupada', 'log_población en edad de trabajar (pet)', 'logdiff_agricultura, ganadería, caza, silvicultura y pesca', 'logdiff_industrias manufactureras']:
                 df_to_future.at[index + 1, 'lag_1'] = predicted_value
                 if index + 2 in df_to_future.index:
                     df_to_future.at[index + 2, 'lag_2'] = predicted_value
