@@ -1,23 +1,26 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="eap_proyection",
-    version="0.1.0",
-    description="Proyecciones de la población económicamente activa en Colombia (2025–2040)",
-    author="Daniel",
-    author_email="tucorreo@example.com",  # opcional
-    packages=find_packages(exclude=["tests", "notebooks"]),
-    include_package_data=True,
+    name='eap_proyection',
+    version='0.1.0',
+    description='Proyección de la población económicamente activa y empleo formal/informal en Colombia',
+    author='Square Root Professional Services Firm',
+    packages=find_packages(),
     install_requires=[
-        "pandas>=1.5.0",
-        "numpy>=1.21",
-        "scikit-learn>=1.0",
-        "matplotlib>=3.5",
-        "seaborn>=0.11",
-        "plotly>=5.0",
-        "pyyaml>=6.0",
-        "statsmodels>=0.13",
-        "prophet>=1.0",  # si decides usarlo
+        'numpy>=2.0.0',
+        'pandas>=2.2.3',
+        'scikit-learn>=1.6.1',
+        'scipy>=1.13.1',
+        'catboost>=1.2.8',
+        'statsmodels>=0.14.4',
+        'prophet>=1.1.6',
+        'optuna>=4.3.0',
+        'matplotlib>=3.9.4',
+        'seaborn>=0.13.2',
+        'plotly>=6.0.1',
+        'holidays>=0.71',
+        'workalendar>=17.0.0'
     ],
-    python_requires=">=3.8",
+    python_requires='>=3.8',
 )
+

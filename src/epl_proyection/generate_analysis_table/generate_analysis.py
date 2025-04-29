@@ -3,6 +3,142 @@ from src.epl_proyection.models.catboost.catboost_main_pipeline import run_catboo
 from src.epl_proyection.etl import preprocessing
 from src.epl_proyection.etl.read_informal_geih import run_pipeline_sector
 import pandas as pd
+import numpy as np
+
+def apply_quadratic_decline(df, date_col, target_col, start_date, end_date, decline_pct, new_col_name='AdjustedForecast'):
+    """
+    Aplica una caída cuadrática al target_col entre start_date y end_date
+    Esta función es para el empleo formal del agro debido a las fuentes encontradas.
+
+    Parameters:
+    - df: DataFrame con columnas de fecha y valores a ajustar.
+    - date_col: Nombre de la columna de fechas (ej. 'ds').
+    - target_col: Columna de proyección base (ej. 'PredEmpleo').
+    - start_date: Fecha de inicio de impacto (str, ej. '2030-01-01').
+    - end_date: Fecha final del impacto (str, ej. '2040-12-01').
+    - decline_pct: Caída total en proporción (ej. -0.03 para -3%).
+    - new_col_name: Nombre de la nueva columna con proyección ajustada.
+
+    Returns:
+    - DataFrame con nueva columna ajustada.
+    """
+    df = df.copy()
+    df[date_col] = pd.to_datetime(df[date_col])
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+
+    # Normalizar tiempo entre 0 y 1
+    mask = (df[date_col] >= start_date) & (df[date_col] <= end_date)
+    total_months = (end_date.to_period('M') - start_date.to_period('M')).n + 1
+    df.loc[mask, 't_norm'] = np.linspace(0, 1, total_months)
+
+    # Función cuadrática de caída
+    df['adjustment_factor'] = 1.0
+    df.loc[mask, 'adjustment_factor'] = 1.0 + decline_pct * df.loc[mask, 't_norm'] ** 2
+
+    # Aplicar ajuste
+    df[new_col_name] = df[target_col] * df['adjustment_factor']
+
+    # Limpieza
+    df.drop(columns=['t_norm', 'adjustment_factor'], inplace=True)
+    
+    return df
+
+def apply_quadratic_growth_agriculture(df, date_col, target_col, start_date, end_date, growth_pct=0.02, new_col_name='AdjustedAgro'):
+    """
+    Aplica un crecimiento cuadrático del 2% al empleo agrícola proyectado.
+
+    Parámetros:
+    - df: DataFrame con fechas y predicción base.
+    - date_col: Nombre de la columna de fechas (ej. 'ds').
+    - target_col: Columna base de la proyección (ej. 'PredAgricultura').
+    - start_date, end_date: Rango de fechas donde se aplica el impacto.
+    - growth_pct: Porcentaje de aumento (por defecto 0.02).
+    - new_col_name: Nombre de la nueva columna con el ajuste.
+
+    Retorna:
+    - DataFrame con columna ajustada.
+    """
+    df = df.copy()
+    df[date_col] = pd.to_datetime(df[date_col])
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+
+    mask = (df[date_col] >= start_date) & (df[date_col] <= end_date)
+    total_months = (end_date.to_period('M') - start_date.to_period('M')).n + 1
+    df.loc[mask, 't_norm'] = np.linspace(0, 1, total_months)
+
+    df['adjustment_factor'] = 1.0
+    df.loc[mask, 'adjustment_factor'] = 1.0 + growth_pct * df.loc[mask, 't_norm'] ** 2
+
+    df[new_col_name] = df[target_col] * df['adjustment_factor']
+
+    df.drop(columns=['t_norm', 'adjustment_factor'], inplace=True)
+    return df
+
+
+def apply_quadratic_growth_ia(df, date_col, target_col, start_date, end_date, growth_pct=0.02, new_col_name='AdjustedIA'):
+    """
+    Aplica un ajuste cuadrático creciente hacia arriba (IA) al target_col.
+
+    Parámetros:
+    - df: DataFrame con fechas y columna objetivo.
+    - date_col: Columna de fecha (ej. 'ds').
+    - target_col: Columna con predicción base.
+    - start_date, end_date: Fechas de inicio y fin del impacto.
+    - growth_pct: Porcentaje de incremento (por defecto 2%).
+    - new_col_name: Nombre de la nueva columna.
+
+    Retorna:
+    - DataFrame con columna ajustada.
+    """
+    df = df.copy()
+    df[date_col] = pd.to_datetime(df[date_col])
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+
+    mask = (df[date_col] >= start_date) & (df[date_col] <= end_date)
+    total_months = (end_date.to_period('M') - start_date.to_period('M')).n + 1
+    df.loc[mask, 't_norm'] = np.linspace(0, 1, total_months)
+
+    df['adjustment_factor'] = 1.0
+    df.loc[mask, 'adjustment_factor'] = 1.0 + growth_pct * df.loc[mask, 't_norm'] ** 2
+    df[new_col_name] = df[target_col] * df['adjustment_factor']
+
+    df.drop(columns=['t_norm', 'adjustment_factor'], inplace=True)
+    return df
+
+def apply_quadratic_growth_iiot(df, date_col, target_col, start_date, end_date, growth_pct=0.04, new_col_name='AdjustedIIoT'):
+    """
+    Aplica un ajuste cuadrático creciente hacia arriba (IIoT) al target_col.
+
+    Parámetros:
+    - df: DataFrame con fechas y columna objetivo.
+    - date_col: Columna de fecha (ej. 'ds').
+    - target_col: Columna con predicción base.
+    - start_date, end_date: Fechas de inicio y fin del impacto.
+    - growth_pct: Porcentaje de incremento (por defecto 4%).
+    - new_col_name: Nombre de la nueva columna.
+
+    Retorna:
+    - DataFrame con columna ajustada.
+    """
+    df = df.copy()
+    df[date_col] = pd.to_datetime(df[date_col])
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+
+    mask = (df[date_col] >= start_date) & (df[date_col] <= end_date)
+    total_months = (end_date.to_period('M') - start_date.to_period('M')).n + 1
+    df.loc[mask, 't_norm'] = np.linspace(0, 1, total_months)
+
+    df['adjustment_factor'] = 1.0
+    df.loc[mask, 'adjustment_factor'] = 1.0 + growth_pct * df.loc[mask, 't_norm'] ** 2
+    df[new_col_name] = df[target_col] * df['adjustment_factor']
+
+    df.drop(columns=['t_norm', 'adjustment_factor'], inplace=True)
+    return df
+
 
 def generate_analysis_table(path_national:str,
                             sheet_name_national:str,
@@ -62,26 +198,75 @@ def generate_analysis_table(path_national:str,
     df_labor.rename(columns={'PredPea': 'PredPETArimax',
                         'pred_pea_catboost':'PredPETCatboost'}, inplace=True)
     
+    # PredictionPEA
+    df_labor['PredPETA'] = (df_labor['PredPETArimax'] + df_labor['PredPETCatboost'])/2
     # Calculate Prediction Proportions
     # Informales
     df_labor['PredInformalArimax'] = df_labor['PredPETArimax'] * df_labor['proportion_informal_PET_ma24']
     df_labor['PredInformalCatboost'] = df_labor['PredPETCatboost'] * df_labor['proportion_informal_PET_ma24']
+    df_labor['PredInformal'] = df_labor['PredPETArimax'] * df_labor['proportion_informal_PET_ma24']
     # Formales
     df_labor['PredFormalArimax'] = df_labor['PredPETArimax'] * df_labor['proportion_formal_PET_ma24']
     df_labor['PredFormalCatboost'] = df_labor['PredPETCatboost'] * df_labor['proportion_formal_PET_ma24']
+    df_labor['PredFormal'] = df_labor['PredPETArimax'] * df_labor['proportion_formal_PET_ma24']
     # Ocupados
     df_labor['PredOcupadosArimax'] = df_labor['PredInformalArimax'] + df_labor['PredFormalArimax']
     df_labor['PredOcupadosCatboost'] = df_labor['PredInformalCatboost'] + df_labor['PredFormalCatboost']
+    df_labor['PredOcupados'] = df_labor['PredInformalArimax'] + df_labor['PredFormalArimax']
     # Sectores
     df_labor['PredAgriculturaArimax'] = df_labor['PredOcupadosArimax'] * df_labor['porportion_aggriculture_Occupied_ma24']
     df_labor['PredAgriculturaCatboost'] = df_labor['PredOcupadosCatboost'] * df_labor['porportion_aggriculture_Occupied_ma24']
     df_labor['PredManufacturaArimax'] = df_labor['PredOcupadosArimax'] * df_labor['proportion_manufacturing_Occupied_ma24']
     df_labor['PredManufacturaCatboost'] = df_labor['PredOcupadosCatboost'] * df_labor['proportion_manufacturing_Occupied_ma24']
+    df_labor['PredAgricultura'] = df_labor['PredOcupadosArimax'] * df_labor['porportion_aggriculture_Occupied_ma24']
+    df_labor['PredManufactura'] = df_labor['PredOcupadosCatboost'] * df_labor['porportion_aggriculture_Occupied_ma24']
 
     # Sectores Formal
     df_labor['PredAgriculturaFormalArimax'] = df_labor['PredFormalArimax'] * mean_agg
     df_labor['PredAgriculturaFormalCatboost'] = df_labor['PredFormalCatboost'] * mean_agg
     df_labor['PredManufacturaFormalArimax'] = df_labor['PredFormalArimax'] * mean_ind
     df_labor['PredManufacturaFormalCatboost'] = df_labor['PredFormalCatboost'] * mean_ind
+    df_labor['PredAgriculturaFormal'] = df_labor['PredFormalArimax'] * mean_agg
+    df_labor['PredManufacturaFormal'] = df_labor['PredFormalCatboost'] * mean_agg
+
+    # Adding IOT impact
+    df_labor = apply_quadratic_growth_iiot(df_labor, date_col='ds', 
+                                            target_col='PredManufacturaFormal', 
+                                            start_date='2028-01-01', 
+                                            end_date='2040-12-01', 
+                                            growth_pct=0.04, 
+                                            new_col_name='PredManufacturaFormalIIoT')
+
+    # Adding IA impact
+    df_labor = apply_quadratic_growth_ia(df_labor, date_col='ds', 
+                                            target_col='PredManufacturaFormal', 
+                                            start_date='2028-01-01', 
+                                            end_date='2040-12-01', 
+                                            growth_pct=0.02, 
+                                            new_col_name='PredManufacturaFormalIA')
+    # Adding Agriculture impact
+    df_labor = apply_quadratic_growth_agriculture(df_labor, 
+                                                    date_col='ds', 
+                                                    target_col='PredAgriculturaFormal', 
+                                                    start_date='2028-01-01', 
+                                                    end_date='2040-12-01', 
+                                                    growth_pct=0.02, 
+                                                    new_col_name='PredManufacturaFormalAgro')
     
+    df_labor = apply_quadratic_decline(df=df_labor,
+                                        date_col='ds',
+                                        target_col='PredAgriculturaFormal',
+                                        start_date='2030-01-01',
+                                        end_date='2040-12-01',
+                                        decline_pct=-0.03,
+                                        new_col_name='PredAgriculturaFormalIAConservador')
+
+    df_labor = apply_quadratic_decline(df=df_labor,
+                                        date_col='ds',
+                                        target_col='PredAgriculturaFormal',
+                                        start_date='2030-01-01',
+                                        end_date='2040-12-01',
+                                        decline_pct=-0.06,
+                                        new_col_name='PredAgriculturaFormalIAPesimista'
+)
     return df_labor

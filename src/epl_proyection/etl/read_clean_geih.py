@@ -14,7 +14,7 @@ from src.epl_proyection.utils.calendar_features import generate_monthly_calendar
 MONTHSDICT = {'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
                 'Jul': '07', 'Ago': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12'}
 IDCOLS = ['Year', 'Month','MonthNumber', 'YearMonth']
-TARGETVARIABLES = ['Población en edad de trabajar (PET)','Población ocupada']
+TARGETVARIABLES = ['Población en edad de trabajar (PET)','Población ocupada','Fuerza de trabajo  ']
 
 ##### CLEANING OF GLOBAL EAP DATA #####
 

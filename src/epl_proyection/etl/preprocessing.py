@@ -153,8 +153,8 @@ def calculate_proportions(df:pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The DataFrame with the added columns for proportions.
     """
-    df['proportion_formal_PET'] = df['Formal'] / df['Población en edad de trabajar (PET)']
-    df['proportion_informal_PET'] = df['Informal'] / df['Población en edad de trabajar (PET)']
+    df['proportion_formal_PET'] = df['Formal'] / df['Fuerza de trabajo  ']
+    df['proportion_informal_PET'] = df['Informal'] / df['Fuerza de trabajo  ']
     df['porportion_aggriculture_Occupied'] = df['Agricultura, ganadería, caza, silvicultura y pesca'] / df['Población ocupada']
     df['proportion_manufacturing_Occupied'] = df['Industrias manufactureras'] / df['Población ocupada']
     

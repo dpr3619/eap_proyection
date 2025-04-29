@@ -30,20 +30,20 @@ def predict_pea_arimax(df_labor):
     # Buscar mejor orden ARIMAX
     best_order = grid_search_arimax(
         df_labor,
-        target_column='log_población en edad de trabajar (pet)',
+        target_column='log_fuerza de trabajo',
         exog_columns=exog_columns_base,
         train_end=fechas_pea['train_end'],
         val_start=fechas_pea['val_start'],
         val_end=fechas_pea['val_end'],
-        p_range=(1, 3),
-        q_range=(1, 3),
+        p_range=(1, 5),
+        q_range=(1, 5),
         seasonal_order=(0, 1, 1, 12)
     )
 
     # Entrenar ARIMAX y hacer predicciones
     result = train_validate_arimax(
         df=df_labor,
-        target_column='log_población en edad de trabajar (pet)',
+        target_column='log_fuerza de trabajo',
         exog_columns=exog_columns_base,
         train_start='2001-01-01',
         train_end="2024-01-01",

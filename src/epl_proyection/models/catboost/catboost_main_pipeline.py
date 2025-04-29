@@ -10,12 +10,12 @@ from src.epl_proyection.models.catboost.catboost_optuna_tuning import catboost_o
 from src.epl_proyection.models.catboost.catboost_train_catboost import train_catboost_with_params
 
 TRAINDATES = {
-    'logdiff_población en edad de trabajar (pet)': {'train_end': "2023-12-01"}
+    'logdiff_fuerza de trabajo': {'train_end': "2023-12-01"}
 }
 
 def run_catboost_pipeline(df_labor, n_trials=30):
     """
-    Entrena CatBoost solo para 'logdiff_población en edad de trabajar (pet)'.
+    Entrena CatBoost solo para 'logdiff_fuerza de trabajo'.
 
     Args:
         df_labor (pd.DataFrame): DataFrame base.
@@ -25,7 +25,7 @@ def run_catboost_pipeline(df_labor, n_trials=30):
         pd.DataFrame: DataFrame con predicciones.
     """
 
-    var = 'logdiff_población en edad de trabajar (pet)'
+    var = 'logdiff_fuerza de trabajo'
     df = df_labor.copy()
     dfsinNa = df.dropna(subset=[var])
 
@@ -93,17 +93,17 @@ def run_catboost_pipeline(df_labor, n_trials=30):
 
     # Solo regresar las columnas necesarias
     df_final = df_to_future[['ds', var, f'pred_{var}']]
-    df_final.dropna(subset=['pred_logdiff_población en edad de trabajar (pet)'], inplace=True)
-    df_final = df_final[['ds', 'pred_logdiff_población en edad de trabajar (pet)']].copy()
+    df_final.dropna(subset=['pred_logdiff_fuerza de trabajo'], inplace=True)
+    df_final = df_final[['ds', 'pred_logdiff_fuerza de trabajo']].copy()
     df_final = df_labor.merge(df_final, on='ds', how='left')
 
     for index,row in df_final.iterrows():
-        df_final.at[index, 'pred_log_población en edad de trabajar (pet)'] = df_final.at[index, 'log_población en edad de trabajar (pet)']
+        df_final.at[index, 'pred_log_pea'] = df_final.at[index, 'log_fuerza de trabajo']
         if index == 0:
             continue
         else:
-            df_final.at[index, 'pred_log_población en edad de trabajar (pet)'] = df_final.at[index-1, 'pred_log_población en edad de trabajar (pet)'] + row['pred_logdiff_población en edad de trabajar (pet)']
-            df_final.at[index, 'pred_pea_catboost'] = np.exp(df_final.at[index, 'pred_log_población en edad de trabajar (pet)'] )
+            df_final.at[index, 'pred_log_pea'] = df_final.at[index-1, 'pred_log_pea'] + row['pred_logdiff_fuerza de trabajo']
+            df_final.at[index, 'pred_pea_catboost'] = np.exp(df_final.at[index, 'pred_log_pea'])
 
     return df_final
 
