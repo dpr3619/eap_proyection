@@ -6,6 +6,7 @@
 *.json
 *.tsv
 *.tfevents
+*.png
 
 # Archivos temporales de Jupyter
 .ipynb_checkpoints/

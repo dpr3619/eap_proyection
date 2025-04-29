@@ -17,12 +17,18 @@ El modelo incorpora análisis de series de tiempo, inteligencia artificial y pos
 
 ## 📦 Instalación
 
-1. Clona el repositorio:
-```bash
-git clone https://github.com/dpr3619/eap_proyection.git
-cd eap_proyection
+### 📦 Opción 1:  Instalar con HTTPS (más fácil, no requiere SSH keys)
+
+```
+pip install git+https://github.com/squareroot-co/empleo-proyeccion.git
 ```
 
+### 📦 Opción 2: Instalar con SSH (más seguro, pero necesitas configurar la clave SSH)
+
+```
+pip install git+ssh://git@github.com/squareroot-co/empleo-proyeccion.git
+
+```
 
 ## ▶️ Ejemplos de uso
 
@@ -42,7 +48,7 @@ df_before_preprocessing = generate_labor_data(
     sector=['Agricultura, ganadería, caza, silvicultura y pesca', 'Industrias manufactureras']
 )
 ```
-2. Ejecutar el pipeline de procesamiento
+### 2. Ejecutar el pipeline de procesamiento
 
 ```python
 from epl_proyection.etl.preprocessing import run_preprocessing_pipeline
