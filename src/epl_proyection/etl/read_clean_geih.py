@@ -18,17 +18,18 @@ TARGETVARIABLES = ['Población en edad de trabajar (PET)','Población ocupada']
 
 ##### CLEANING OF GLOBAL EAP DATA #####
 
-def read_geih_global_data(path: str) -> pd.DataFrame:
+def read_geih_global_data(path: str , sheet_name:str) -> pd.DataFrame:
     """
     Reads the GEIH raw data from the specified path and return an unprocessed DataFrame.
     Args:
         path (str): Path to the GEIH data file.
+        sheet_name (str): Name of the sheet to read from the Excel file.
     Returns:
         pd.DataFrame: Unprocessed DataFrame containing the GEIH data.
     """
     # Read the data
-    df = pd.read_excel('data/anex-GEIH-feb2025.xlsx', 
-                sheet_name = 'Total nacional',
+    df = pd.read_excel(io = path, 
+                sheet_name = sheet_name,
                 header = 11)
     # Filtering by neccesary columns
     df = df.iloc[0:18].copy()
@@ -115,7 +116,8 @@ def columns_to_numeric(df:pd.DataFrame, columns: list) -> pd.DataFrame:
 
 #### CLEANING OF SECTOR DATA #####
 
-def read_geih_sector_data(path: str) -> pd.DataFrame:
+def read_geih_sector_data(path: str,
+                          sheet_name:str) -> pd.DataFrame:
     """
     Reads the GEIH raw data from the specified path and return an unprocessed DataFrame.
     Args:
@@ -124,8 +126,8 @@ def read_geih_sector_data(path: str) -> pd.DataFrame:
         pd.DataFrame: Unprocessed DataFrame containing the GEIH data.
     """
     # Read the data
-    df = pd.read_excel('data/anex-GEIH-feb2025.xlsx', 
-                sheet_name = 'Ocupados TN_T13_rama',
+    df = pd.read_excel(io = path, 
+                sheet_name = sheet_name,
                 header = 12)
     # Filtering by neccesary columns
     df = df.iloc[0:18].copy()
@@ -150,14 +152,18 @@ def get_min_max_year(df: pd.DataFrame) -> tuple:
 
 ## MAIN PIPELINE ##
 
-def run_pipeline(target_year:int = 2040, sectors:list = []) -> pd.DataFrame:
+def run_pipeline(path_national: str, 
+                    sheet_name_national:str,
+                    path_sector: str,
+                    sheet_name_sector:str, 
+                    target_year:int = 2040, sectors:list = []) -> pd.DataFrame:
     
     """
     Main function to run the data processing pipeline.
     """
     # Read the data
-    df = read_geih_global_data('data/anex-GEIH-feb2025.xlsx')
-    df_sector = read_geih_sector_data('data/anex-GEIH-feb2025.xlsx')
+    df = read_geih_global_data(path = path_national, sheet_name = sheet_name_national)
+    df_sector = read_geih_sector_data(path = path_sector, sheet_name = sheet_name_sector)
 
     # Transform the data
     df = transform_dataframe_v2(df)

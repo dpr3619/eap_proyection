@@ -24,7 +24,7 @@ def read_geih_informal_data(path: str, sheet_name:str) -> pd.DataFrame:
         pd.DataFrame: Unprocessed DataFrame containing the GEIH data.
     """
     # Read the data
-    df = pd.read_excel(path, 
+    df = pd.read_excel(io = path, 
                 sheet_name = sheet_name,
                 header = 10)
     # Filtering by neccesary columns
@@ -117,7 +117,7 @@ def read_geih_informal_data_sector(path: str, sheet_name:str) -> pd.DataFrame:
         pd.DataFrame: Unprocessed DataFrame containing the GEIH data.
     """
     # Read the data
-    df = pd.read_excel(path, 
+    df = pd.read_excel(io = path, 
                 sheet_name = sheet_name,
                 header = 10)
     # Filtering by neccesary columns

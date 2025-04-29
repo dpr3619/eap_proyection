@@ -4,32 +4,47 @@ from src.epl_proyection.etl import preprocessing
 from src.epl_proyection.etl.read_informal_geih import run_pipeline_sector
 import pandas as pd
 
-def generate_analysis_table(path:str, 
-                            sheet_name:str, 
+def generate_analysis_table(path_national:str,
+                            sheet_name_national:str,
+                            path_sector:str,
+                            sheet_name_sector:str,
+                            path_formal_informal:str,
+                            sheet_name_formal_informal:str, 
+                            path_activity_formal:str,
+                            sheet_name_activity_formal:str,
                             sector:str, 
-                            cols_to_lag: list,
-                            path_sector_data:str,
-                            sheet_name_sector:str) -> pd.DataFrame:
+                            cols_to_lag: list,) -> pd.DataFrame:
     """
     Function to generate the analysis table for the labor market.
     
     Args:
-        path (str): Path to the Excel file.
-        sheet_name (str): Name of the sheet in the Excel file.
-        sector (str): Sector to filter.
+        path_national:str Path For National Data
+        sheet_name_national:str Sheet Name for National DaTA
+        path_sector:str  Path for economic sector data employement, usually the same as National data
+        sheet_name_sector:str Sheet name for economic sector data employement
+        path_formal_informal:str Path for formal and informal data
+        sheet_name_formal_informal:str Sheet name for formal and informal data 
+        path_activity_formal:str Path for information about informal and formal employment data usually the same as forma and informal
+        sheet_name_activity_formal:str Sheet name for information about informal and formal employment data
+        sector:str, 
+        cols_to_lag: list
     
     Returns:
         pd.DataFrame: The final analysis table.
     """
     
     # Generate labor data
-    df_labor = preprocessing.run_preprocessing_pipeline(path_df2 = path,
-                                                        sheet_name_df2 = sheet_name,
-                                                        sector = sector,
+    df_labor = preprocessing.run_preprocessing_pipeline(path_national=path_national,
+                                                        sheet_name_national=sheet_name_national,
+                                                        path_sector=path_sector,
+                                                        sheet_name_sector=sheet_name_sector,
+                                                        path_formal_informal=path_formal_informal,
+                                                        sheet_name_formal_informal=sheet_name_formal_informal,
+                                                        sector=sector,
                                                         cols_to_lag=cols_to_lag)
     # Get Sector Mean
-    df = run_pipeline_sector(path = path_sector_data,
-                                            sheet_name=sheet_name_sector,
+    df = run_pipeline_sector(path = path_activity_formal,
+                                            sheet_name=sheet_name_activity_formal,
                                             sector=['Agricultura, ganadería, caza, silvicultura y pesca','Industrias manufactureras'])
     df['PropFomralesAgricultura'] = df['Formal_Agricultura, ganadería, caza, silvicultura y pesca']/df['Formal']
     df['PropFomralesIndustrias'] = df['Formal_Industrias manufactureras']/df['Formal']

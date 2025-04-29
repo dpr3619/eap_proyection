@@ -5,7 +5,9 @@ import os
 from src.epl_proyection.etl import read_clean_geih
 from src.epl_proyection.etl import read_informal_geih
 
-def generate_labor_data(path_df2:str, sheet_name_df2:str, sector:List[str]) -> pd.DataFrame:
+def generate_labor_data(path_national:str, sheet_name_national:str,
+                        path_sector:str, sheet_name_sector:str, 
+                        path_formal_informal:str, sheet_name_formal_informal:str, sector:List[str]) -> pd.DataFrame:
     """
     Function to generate Labor data from national and sectoral data.
     Args:
@@ -18,9 +20,13 @@ def generate_labor_data(path_df2:str, sheet_name_df2:str, sector:List[str]) -> p
         pd.DataFrame: The final processed DataFrame.
     """
     # Read the data
-    df1 = read_clean_geih.run_pipeline(target_year = 2040,
+    df1 = read_clean_geih.run_pipeline(path_national=path_national,
+                                    sheet_name_national=sheet_name_national,
+                                    path_sector=path_sector,
+                                    sheet_name_sector=sheet_name_sector,
+                                    target_year=2040,
                                     sectors=sector)
-    df2 = read_informal_geih.run_pipeline(path_df2, sheet_name_df2)
+    df2 = read_informal_geih.run_pipeline(path_formal_informal, sheet_name_formal_informal)
 
     # Transform the data
 
@@ -154,20 +160,27 @@ def calculate_proportions(df:pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-def run_preprocessing_pipeline(path_df2:str, sheet_name_df2:str, sector:List[str],
+def run_preprocessing_pipeline(path_national:str, sheet_name_national:str,
+                                path_sector:str, sheet_name_sector:str, 
+                                path_formal_informal:str, sheet_name_formal_informal:str, sector:List[str],
                                 cols_to_lag:List[str]) -> pd.DataFrame:
     """
     Function to run the preprocessing pipeline.
     Args:
-        path_df2 (str): Path to the sectoral data file.
-        sheet_name_df2 (str): Name of the sheet in the sectoral data file.
+        path_national (str): Path to the national data file.
+        sheet_name_national (str): Name of the sheet in the national data file.
+        path_sector (str): Path to the sectoral data file.
+        sheet_name_sector (str): Name of the sheet in the sectoral data file.
         sector (list): List of sectors to filter.
         cols_to_lag (list): List of columns to apply lagging.
     Returns:
         pd.DataFrame: The final processed DataFrame.
     """
     # Generate labor data
-    df = generate_labor_data(path_df2, sheet_name_df2, sector)
+    df = generate_labor_data(path_national = path_national, sheet_name_national = sheet_name_national, 
+                            path_sector = path_sector, sheet_name_sector = sheet_name_sector,
+                            path_formal_informal = path_formal_informal, sheet_name_formal_informal = sheet_name_formal_informal, 
+                            sector = sector)
 
     # Generate log and logdiff columns
     df = generate_log_and_logdiff(df, cols_to_lag)
