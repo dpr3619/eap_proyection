@@ -14,24 +14,13 @@ def train_validate_arimax(
     seasonal_order=(0, 0, 0, 0)
 ):
     """
-    Entrena y valida un modelo ARIMAX.
-
-    Args:
-        df (pd.DataFrame): DataFrame con 'ds', target y regresores exógenos.
-        target_column (str): Columna objetivo (y).
-        exog_columns (list): Lista de columnas regresoras.
-        train_start (str): Inicio del entrenamiento (YYYY-MM-DD).
-        train_end (str): Fin del entrenamiento (YYYY-MM-DD).
-        val_start (str): Inicio de la validación (YYYY-MM-DD).
-        val_end (str): Fin de la validación (YYYY-MM-DD).
-        order (tuple): (p,d,q) para el ARIMAX.
-        seasonal_order (tuple): (P,D,Q,s) para estacionalidad (por defecto sin estacionalidad).
+    Entrena y valida un modelo ARIMAX, evaluando solo sobre valores no NaN.
 
     Returns:
         dict: {
             'model': modelo SARIMAX entrenado,
             'forecast': predicciones,
-            'metrics': {'mae': valor, 'mse': valor}
+            'metrics': {'mae': valor, 'mse': valor, 'mape': valor}
         }
     """
 
@@ -61,18 +50,21 @@ def train_validate_arimax(
 
     # 4. Forecast
     forecast = model_fit.predict(
-        start=val.index[0],
-        end=val.index[-1],
+        start=len(y_train),
+        end=len(y_train) + len(y_val) - 1,
         exog=X_val
     )
 
-    # 5. Evaluar
-    mae = mean_absolute_error(y_val, forecast)
-    mse = mean_squared_error(y_val, forecast)
-    mape = mean_absolute_percentage_error(y_val, forecast)
+    # 5. Evaluar SOLO en valores no NaN
+    df_eval = pd.DataFrame({'y_true': y_val, 'y_pred': forecast}).dropna()
+
+    mae = mean_absolute_error(df_eval['y_true'], df_eval['y_pred'])
+    mse = mean_squared_error(df_eval['y_true'], df_eval['y_pred'])
+    mape = mean_absolute_percentage_error(df_eval['y_true'], df_eval['y_pred'])
 
     return {
         'model': model_fit,
         'forecast': forecast,
         'metrics': {'mae': mae, 'mse': mse, 'mape': mape}
     }
+

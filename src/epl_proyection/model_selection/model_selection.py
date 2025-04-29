@@ -1,105 +1,169 @@
 import numpy as np
 from sklearn.metrics import mean_squared_error
 from math import sqrt
-from src.epl_proyection.models.catboost.catboost_feature_engineering import make_features
-from src.epl_proyection.models.catboost.catboost_optuna_tuning import catboost_optuna_tuning
-from src.epl_proyection.models.catboost.catboost_train_catboost import train_catboost_with_params
-from src.epl_proyection.models.arimax.arimax_train_validate_forecast import train_validate_forecast_arimax
+from src.epl_proyection.models.arimax.arimax_full_pipeline import arimax_full_pipeline
+from src.epl_proyection.models.catboost.catboost_main_pipeline import run_catboost_pipeline
+import pandas as pd
+from sklearn.metrics import mean_absolute_error
+from src.epl_proyection.models.catboost.catboost_main_pipeline import TRAINDATES
 
-def train_catboost_and_arimax(
-    df,
-    target_column,
-    exog_columns,
-    fechas,
-    lags_catboost=[1, 2, 3],
-    rolling_windows=[1, 2, 3],
-    catboost_trials=30,
-    catboost_timeout=600,
-    arima_order=(3,1,3),
-    arima_seasonal_order=(0,1,1,12)
-):
+fechas_dict = {
+    'log_población en edad de trabajar (pet)': {
+        'train_end': "2023-12-01",
+        'val_start': "2024-01-01",
+        'val_end': "2025-02-01",
+        'future_start': "2025-03-01",
+        'future_end': "2040-12-01"
+    },
+        'log_población ocupada': {
+        'train_end': "2023-12-01",
+        'val_start': "2024-01-01",
+        'val_end': "2025-02-01",
+        'future_start': "2025-03-01",
+        'future_end': "2040-12-01"
+    },
+    'log_agricultura, ganadería, caza, silvicultura y pesca': {
+        'train_end': "2023-02-01",  # entrenar hasta 1 año antes para dejar 12 meses de validación
+        'val_start': "2023-03-01",
+        'val_end': "2024-02-01",
+        'future_start': "2024-03-01",
+        'future_end': "2040-12-01"
+    },
+    'log_industrias manufactureras': {
+        'train_end': "2023-02-01",
+        'val_start': "2023-03-01",
+        'val_end': "2024-02-01",
+        'future_start': "2024-03-01",
+        'future_end': "2040-12-01"
+    },
+    'log_formales': {
+        'train_end': "2024-09-01",  # 5 meses de validación
+        'val_start': "2024-10-01",
+        'val_end': "2025-02-01",
+        'future_start': "2025-03-01",
+        'future_end': "2040-12-01"
+    },
+    'log_informales': {
+        'train_end': "2024-09-01",
+        'val_start': "2024-10-01",
+        'val_end': "2025-02-01",
+        'future_start': "2025-03-01",
+        'future_end': "2040-12-01"
+    }
+}
+
+
+
+import numpy as np
+import pandas as pd
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from math import sqrt
+from src.epl_proyection.models.arimax.arimax_full_pipeline import arimax_full_pipeline
+from src.epl_proyection.models.catboost.catboost_main_pipeline import run_catboost_pipeline
+
+
+def calculate_rmse(y_true, y_pred):
+    return sqrt(mean_squared_error(y_true, y_pred))
+
+def calculate_mae(y_true, y_pred):
+    return mean_absolute_error(y_true, y_pred)
+
+def generate_evaluation_table(df_labor):
     """
-    Entrena CatBoost y ARIMAX para la misma serie y selecciona el mejor modelo basado en RMSE.
+    Genera tabla de evaluación comparando CatBoost vs ARIMAX y crea DF de predicciones futuras.
 
     Args:
-        df (pd.DataFrame): DataFrame con columna 'ds' y features.
-        target_column (str): Variable objetivo.
-        exog_columns (list): Variables exógenas.
-        fechas (dict): Fechas de corte: train_end, val_start, val_end.
+        df_labor (pd.DataFrame): DataFrame base.
 
     Returns:
-        dict: {
-            'best_model': 'catboost' o 'arimax',
-            'forecast_val': DataFrame de predicción en validación,
-            'rmse_catboost': RMSE en validación CatBoost,
-            'rmse_arimax': RMSE en validación ARIMAX
-        }
+        tuple: (evaluation_table, df_final_predictions)
     """
 
-    # --- CatBoost ---
-    # 1. Feature Engineering
-    df_features = make_features(df, target_column, exog_columns, lags_catboost, rolling_windows)
+    # 1. Corre CatBoost
+    df_catboost_trained = run_catboost_pipeline(df_labor, n_trials=30)
 
-    feature_columns = [col for col in df_features.columns if col not in ["ds", target_column]]
+    results = []
+    future_predictions = {}
 
-    # 2. Optuna para mejores hiperparámetros
-    catboost_tuning = catboost_optuna_tuning(
-        df_train = df_features[df_features['ds'] <= fechas['train_end']],
-        df_val = df_features[(df_features['ds'] >= fechas['val_start']) & (df_features['ds'] <= fechas['val_end'])],
-        target_column=target_column,
-        feature_columns=feature_columns,
-        n_trials=catboost_trials,
-        timeout=catboost_timeout
-    )
-    best_params_catboost = catboost_tuning['best_params']
+    vars_to_predict = list(fechas_dict.keys())
 
-    # 3. Entrenamiento final CatBoost
-    catboost_model = train_catboost_with_params(
-        df=df_features[df_features['ds'] <= fechas['val_end']],
-        target_column=target_column,
-        feature_columns=feature_columns,
-        params=best_params_catboost
-    )
+    for var in vars_to_predict:
+        print(f"\nEvaluando variable: {var}")
 
-    preds_catboost = catboost_model['predictions']
-    y_true_catboost = df_features.loc[df_features['ds'] <= fechas['val_end'], target_column]
+        fechas = fechas_dict[var]
 
-    # Extraer solo el rango de validación
-    mask_val = (df_features['ds'] >= fechas['val_start']) & (df_features['ds'] <= fechas['val_end'])
-    preds_catboost_val = preds_catboost[mask_val]
-    y_true_catboost_val = y_true_catboost[mask_val]
+        # --- ARIMAX ---
+        result_arimax = arimax_full_pipeline(
+            df_labor=df_labor,
+            target_column=var,
+            exog_columns=['workdays', 'weekends', 'holidays', 'negative_crashes'],
+            fechas=fechas,
+            p_range=(0,5),
+            q_range=(0,5),
+            seasonal_order=(0,1,1,12)
+        )
 
-    rmse_catboost = sqrt(mean_squared_error(y_true_catboost_val, preds_catboost_val))
+        forecast_future_arimax = result_arimax['forecast']
 
-    # --- ARIMAX ---
-    arimax_result = train_validate_forecast_arimax(
-        df=df,
-        target_column=target_column,
-        exog_columns=exog_columns,
-        train_end=fechas['train_end'],
-        val_start=fechas['val_start'],
-        val_end=fechas['val_end'],
-        order=arima_order,
-        seasonal_order=arima_seasonal_order
-    )
+        # --- CatBoost ---
+        forecast_future_catboost = df_catboost_trained[['ds', f'pred_{var}']].copy()
 
-    preds_arimax_val = arimax_result['forecast_val']['forecast'].values
-    y_true_arimax_val = df[(df['ds'] >= fechas['val_start']) & (df['ds'] <= fechas['val_end'])][target_column].values
+        # --- Valores reales para validación ---
+        mask_val = (df_labor['ds'] >= fechas['val_start']) & (df_labor['ds'] <= fechas['val_end'])
+        y_true = df_labor.loc[mask_val, var].values
 
-    rmse_arimax = sqrt(mean_squared_error(y_true_arimax_val, preds_arimax_val))
+        # --- Predicciones para validación ---
+        y_pred_arimax = result_arimax['forecast'].loc[
+            (result_arimax['forecast']['ds'] >= fechas['val_start']) & (result_arimax['forecast']['ds'] <= fechas['val_end']),
+            'forecast'
+        ].values
 
-    # --- Selección del mejor modelo ---
-    if rmse_catboost <= rmse_arimax:
-        best_model = 'catboost'
-        forecast_val = df_features.loc[mask_val, ['ds']].copy()
-        forecast_val['forecast'] = preds_catboost_val
-    else:
-        best_model = 'arimax'
-        forecast_val = arimax_result['forecast_val']
+        y_pred_catboost = df_catboost_trained.loc[
+            (df_catboost_trained['ds'] >= fechas['val_start']) & (df_catboost_trained['ds'] <= fechas['val_end']),
+            f'pred_{var}'
+        ].values
 
-    return {
-        'best_model': best_model,
-        'forecast_val': forecast_val,
-        'rmse_catboost': rmse_catboost,
-        'rmse_arimax': rmse_arimax
-    }
+        # --- Calcular métricas ---
+        rmse_arimax = calculate_rmse(y_true, y_pred_arimax)
+        mae_arimax = calculate_mae(y_true, y_pred_arimax)
+
+        rmse_catboost = calculate_rmse(y_true, y_pred_catboost)
+        mae_catboost = calculate_mae(y_true, y_pred_catboost)
+
+        # --- Decidir mejor modelo ---
+        if rmse_arimax <= rmse_catboost:
+            best_model = 'ARIMAX'
+            pred_future = forecast_future_arimax[['ds', 'forecast']].rename(columns={'forecast': f'forecast_{var}'})
+        else:
+            best_model = 'CatBoost'
+            pred_future = forecast_future_catboost.rename(columns={f'pred_{var}': f'forecast_{var}'})
+
+        # --- Guardar evaluación ---
+        results.append({
+            'Variable': var,
+            'RMSE_ARIMAX': rmse_arimax,
+            'MAE_ARIMAX': mae_arimax,
+            'RMSE_CatBoost': rmse_catboost,
+            'MAE_CatBoost': mae_catboost,
+            'Mejor Modelo': best_model
+        })
+
+        # --- Guardar predicción futura ---
+        future_predictions[var] = pred_future
+
+    # 2. Convertir resultados en tabla
+    evaluation_table = pd.DataFrame(results)
+
+    # 3. Armar df_final_predictions
+    # Merge todas las predicciones sobre la base de fechas
+    df_final_predictions = None
+
+    for var, pred_df in future_predictions.items():
+        if df_final_predictions is None:
+                df_final_predictions = pred_df.copy()
+        else:
+            df_final_predictions = df_final_predictions.merge(pred_df, on='ds', how='left')
+
+        return evaluation_table, df_final_predictions
+
+

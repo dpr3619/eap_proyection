@@ -92,6 +92,68 @@ def financial_crisis_impact(df:pd.DataFrame) -> pd.DataFrame:
     )
     return df
 
+
+
+
+def dynamic_moving_average(df, columns, cutoff='2025-03-01', window=24):
+    """
+    Calcula un moving average dinámico alimentándose de las nuevas predicciones a partir del cutoff.
+
+    Args:
+        df (pd.DataFrame): DataFrame con 'ds' y las columnas de interés.
+        columns (list): Columnas para aplicar el promedio móvil.
+        cutoff (str): Fecha desde donde se empieza el cálculo dinámico.
+        window (int): Número de meses para el promedio.
+
+    Returns:
+        pd.DataFrame: DataFrame con nuevas columnas *_ma24.
+    """
+    df_result = df.copy()
+    df_result['ds'] = pd.to_datetime(df_result['ds'])
+
+    for col in columns:
+        ma_values = []
+        historical_values = list(df_result.loc[df_result['ds'] < pd.to_datetime(cutoff), col].dropna())
+
+        for idx, row in df_result.iterrows():
+            current_date = row['ds']
+
+            if current_date < pd.to_datetime(cutoff):
+                ma_values.append(np.nan)
+            else:
+                # Calcular promedio de los últimos 'window' valores
+                window_values = historical_values[-window:]
+                avg = np.mean(window_values)
+                ma_values.append(avg)
+
+                # Actualizar históricos con el nuevo promedio calculado
+                historical_values.append(avg)
+
+        df_result[f'{col}_ma24'] = ma_values
+
+    return df_result
+
+
+
+
+
+
+
+def calculate_proportions(df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Function to calculate the proportions of formal and informal employment.
+    Args:
+        df (pd.DataFrame): The input DataFrame.
+    Returns:
+        pd.DataFrame: The DataFrame with the added columns for proportions.
+    """
+    df['proportion_formal_PET'] = df['Formal'] / df['Población en edad de trabajar (PET)']
+    df['proportion_informal_PET'] = df['Informal'] / df['Población en edad de trabajar (PET)']
+    df['porportion_aggriculture_Occupied'] = df['Agricultura, ganadería, caza, silvicultura y pesca'] / df['Población ocupada']
+    df['proportion_manufacturing_Occupied'] = df['Industrias manufactureras'] / df['Población ocupada']
+    
+    return df
+
 def run_preprocessing_pipeline(path_df2:str, sheet_name_df2:str, sector:List[str],
                                 cols_to_lag:List[str]) -> pd.DataFrame:
     """
@@ -115,5 +177,13 @@ def run_preprocessing_pipeline(path_df2:str, sheet_name_df2:str, sector:List[str
 
     # Add financial crisis impact
     df = financial_crisis_impact(df)
+
+    # Calculate proportions
+    df = calculate_proportions(df)
+    df['ds'] = df['YearMonth']
+
+    # Generate moving averages from proportions
+    df = dynamic_moving_average(df, ['proportion_formal_PET', 'proportion_informal_PET'], window=36)
+    df = dynamic_moving_average(df, ['porportion_aggriculture_Occupied', 'proportion_manufacturing_Occupied'], window=36)
 
     return df
